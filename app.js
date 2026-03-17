@@ -222,25 +222,109 @@ function renderChart() {
   const to = document.getElementById('chartTo').value;
   const pts = generateHistory(from, to, chartDays);
   const vals = pts.map(p => p.y);
-  const min = Math.min(...vals), max = Math.max(...vals);
+  const minVal = Math.min(...vals), maxVal = Math.max(...vals);
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  document.getElementById('chartMin').textContent = `Low: ${fmt(min, to)}`;
+  document.getElementById('chartMin').textContent = `Low: ${fmt(minVal, to)}`;
   document.getElementById('chartAvg').textContent = `Avg: ${fmt(avg, to)}`;
-  document.getElementById('chartMax').textContent = `High: ${fmt(max, to)}`;
-  const ctx = document.getElementById('rateChart');
-  if (chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx, {
-    type: 'line',
-    data: { datasets: [{ data: pts, borderColor: '#378ADD', borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: 'rgba(55,138,221,0.07)' }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: {
-        x: { type: 'time', time: { unit: chartDays <= 7 ? 'day' : chartDays <= 30 ? 'week' : 'month' }, grid: { display: false }, ticks: { color: '#aaa', font: { size: 10, family: 'DM Mono' } } },
-        y: { position: 'right', grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#aaa', font: { size: 10, family: 'DM Mono' }, maxTicksLimit: 5 } }
-      },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${fmt(c.raw.y, to)} ${to}` }, titleFont: { family: 'DM Mono', size: 11 }, bodyFont: { family: 'DM Mono', size: 11 } } }
-    }
-  });
+  document.getElementById('chartMax').textContent = `High: ${fmt(maxVal, to)}`;
+
+  const canvas = document.getElementById('rateChart');
+  const wrap = canvas.parentElement;
+  const W = wrap.clientWidth || 560;
+  const H = 180;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const padL = 10, padR = 60, padT = 16, padB = 28;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const range = maxVal - minVal || maxVal * 0.01;
+
+  function xPos(i) { return padL + (i / (pts.length - 1)) * chartW; }
+  function yPos(v) { return padT + chartH - ((v - minVal) / range) * chartH; }
+
+  // Grid lines + Y labels (right side)
+  const ySteps = 4;
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#aaa';
+  ctx.textAlign = 'left';
+  for (let i = 0; i <= ySteps; i++) {
+    const v = minVal + (range * i / ySteps);
+    const y = yPos(v);
+    ctx.strokeStyle = 'rgba(128,128,128,0.12)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + chartW, y); ctx.stroke();
+    ctx.fillText(fmt(v, to), padL + chartW + 6, y + 3);
+  }
+
+  // X axis date labels
+  const xLabelCount = Math.min(pts.length, chartDays <= 7 ? 7 : chartDays <= 30 ? 5 : 4);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#aaa';
+  for (let i = 0; i < xLabelCount; i++) {
+    const idx = Math.round(i * (pts.length - 1) / (xLabelCount - 1));
+    const d = pts[idx].x;
+    const label = chartDays <= 7
+      ? d.toLocaleDateString([], { weekday: 'short' })
+      : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    ctx.fillText(label, xPos(idx), H - 6);
+  }
+
+  // Fill area under line
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(pts[0].y));
+  for (let i = 1; i < pts.length; i++) {
+    const x0 = xPos(i - 1), y0 = yPos(pts[i - 1].y);
+    const x1 = xPos(i), y1 = yPos(pts[i].y);
+    const cpx = (x0 + x1) / 2;
+    ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+  }
+  ctx.lineTo(xPos(pts.length - 1), padT + chartH);
+  ctx.lineTo(xPos(0), padT + chartH);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+  grad.addColorStop(0, 'rgba(55,138,221,0.18)');
+  grad.addColorStop(1, 'rgba(55,138,221,0.01)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(pts[0].y));
+  for (let i = 1; i < pts.length; i++) {
+    const x0 = xPos(i - 1), y0 = yPos(pts[i - 1].y);
+    const x1 = xPos(i), y1 = yPos(pts[i].y);
+    const cpx = (x0 + x1) / 2;
+    ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+  }
+  ctx.strokeStyle = '#378ADD';
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Hover tooltip
+  canvas.onmousemove = function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left - padL;
+    const idx = Math.max(0, Math.min(pts.length - 1, Math.round((mx / chartW) * (pts.length - 1))));
+    renderChart._hover = idx;
+    renderChart();
+    // Draw tooltip dot + label
+    const cx = xPos(idx), cy = yPos(pts[idx].y);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#378ADD';
+    ctx.fill();
+    const label = `${fmt(pts[idx].y, to)} ${to}`;
+    const tx = cx + 8 > W - 80 ? cx - 70 : cx + 8;
+    ctx.fillStyle = '#555';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, tx, cy - 6);
+  };
+  canvas.onmouseleave = function() { renderChart._hover = null; renderChart(); };
 }
 
 document.getElementById('chartFrom').addEventListener('change', renderChart);
