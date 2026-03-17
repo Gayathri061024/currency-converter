@@ -120,7 +120,7 @@ Deployed via **GitHub Pages** — zero cost, zero configuration:
 
 1. Push to `main` branch
 2. Go to **Settings → Pages → Source: main / root**
-3. Live at `https://yourusername.github.io/currency-converter`
+3. Live at `(https://github.com/Gayathri061024/currency-converter)`
 
 ---
 
