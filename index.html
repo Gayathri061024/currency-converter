@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Currency Converter Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="root">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div><p class="title">Currency Converter</p><p class="subtitle">Pro — live rates</p></div>
+    <button class="fav-btn" id="favToggleBtn" title="Save to favorites">☆</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="convert">Convert</button>
+    <button class="tab" data-tab="compare">Compare</button>
+    <button class="tab" data-tab="chart">Chart</button>
+    <button class="tab" data-tab="favorites">Favorites</button>
+    <button class="tab" data-tab="history">History</button>
+  </div>
+
+  <!-- CONVERT -->
+  <div class="panel active" id="tab-convert">
+    <div class="card">
+      <div class="lbl">You send</div>
+      <div class="row">
+        <input class="amt-input" id="fromAmount" type="number" value="1" min="0" placeholder="0"/>
+        <div class="sel-wrap"><select class="sel" id="fromCurrency"></select><span class="chev">▼</span></div>
+      </div>
+    </div>
+    <button class="swap-btn" id="swapBtn">⇅</button>
+    <div class="card" style="margin-top:10px;">
+      <div class="lbl">They receive</div>
+      <div class="row">
+        <span class="output" id="toOutput">—</span>
+        <div class="sel-wrap"><select class="sel" id="toCurrency"></select><span class="chev">▼</span></div>
+      </div>
+      <div class="rate-bar" id="rateBar" style="display:none;">
+        <span class="rate-txt" id="rateLabel"></span>
+        <span class="rate-val" id="rateVal"></span>
+      </div>
+    </div>
+    <p class="ts" id="timestamp"></p>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="panel" id="tab-compare">
+    <div class="card">
+      <div class="lbl">Base amount & currency</div>
+      <div class="row" style="margin-bottom:12px;">
+        <input class="amt-input" id="cmpAmount" type="number" value="100" min="0" style="font-size:22px;"/>
+        <div class="sel-wrap"><select class="sel" id="cmpBase"></select><span class="chev">▼</span></div>
+      </div>
+      <div class="lbl">Select currencies to compare</div>
+      <div class="cmp-checkbox-wrap" id="cmpChecks"></div>
+    </div>
+    <div class="compare-grid" id="compareGrid"></div>
+  </div>
+
+  <!-- CHART -->
+  <div class="panel" id="tab-chart">
+    <div class="card">
+      <div class="lbl">Rate trend</div>
+      <div class="row" style="margin-bottom:10px;gap:8px;">
+        <div class="sel-wrap"><select class="sel" id="chartFrom" style="min-width:90px;"></select><span class="chev">▼</span></div>
+        <span style="font-size:12px;color:#999;">→</span>
+        <div class="sel-wrap"><select class="sel" id="chartTo" style="min-width:90px;"></select><span class="chev">▼</span></div>
+      </div>
+      <div class="chart-period" id="periodBtns">
+        <button class="period-btn active" data-d="7">7D</button>
+        <button class="period-btn" data-d="30">1M</button>
+        <button class="period-btn" data-d="90">3M</button>
+      </div>
+      <div class="chart-wrap"><canvas id="rateChart"></canvas></div>
+      <div class="chart-info">
+        <span id="chartMin"></span><span id="chartAvg"></span><span id="chartMax"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAVORITES -->
+  <div class="panel" id="tab-favorites">
+    <div class="fav-list" id="favList"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="tab-history">
+    <div id="histHeader"></div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
